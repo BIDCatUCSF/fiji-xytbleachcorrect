@@ -1,0 +1,135 @@
+// Name:
+//	wideguy_xyt_bleachcorrect_Imaris.txt
+//
+// Description:
+//	fiji macro for performing xyt Bleach Correction and file conversion to be 
+// 	opened in Imaris
+//
+// Usage:
+//	0) Create a folder for input images and one for resultant output images
+//	1) Open your image stack in FIJI
+//	2) In FIJI: 
+//		Plugins -> Macros -> Run...
+//		and select the text file named wideguy_xyt_bleachcorrect_Imaris.txt 
+//	3) Choose the input folder
+//	4) Choose the output folder
+//	5) Grab coffee
+// 
+// Output:
+//	.ics and .ids file for each image stack
+//	
+//	to open the output in Imaris, drag the .ics file into Imaris' Surpass 
+//
+// Author:
+//	Adam Fries 2018.02.21
+//
+// Details:
+//	Intended only for use of 2-channel uManager output files
+// 	Does not work for z-stacks...yet
+// 
+// Dependencies:
+//	FIJI BleachCorrection plugin
+//	FIJI BioFormats
+ 
+
+
+
+// define the source direction and open dialog box to choose from
+sourcedir = getDirectory("Choose Source Directory ");
+
+// define the output directory
+destdir = getDirectory("Choose Destination Directory ");
+
+// populate the list variable as an array of the source file names
+list = getFileList(sourcedir);
+
+// engage Batch Mode - way fastes, suppressed image output to FIJI window
+setBatchMode(true);
+
+// just the dimensions of the image
+open(sourcedir + list[0]);
+getDimensions(width, height, channels, slices, frames);
+print(channels);
+close()
+
+// create the dialog box to choose the channel to correct
+check = newArray(channels);
+
+allchans = '';
+Dialog.create('Check the channels you wish to correct');
+for (k=0; k<channels; k++) {
+	Dialog.addCheckbox("Channel " + toString(k + 1) + ":", false);
+}
+Dialog.show();
+
+for (l=0; l<channels; l++) {
+	check[l] = Dialog.getCheckbox();
+}
+
+
+// loop through each file in the source directory and pick out only the tif images		
+//	1) splits the channels
+//	2) perform bleach correction on 2nd channel
+// 	3) merge the channels
+//	4) save the output as an ics file to be opened in Imaris 
+
+
+// define the progress bar window and begin running it
+title = "[Progress]";
+run("Text Window...", "name="+ title +" width=35 height=2 monospaced");
+
+
+len = list.length;
+for (i=0; i<len; i++) {
+	// start the progress bar
+	print(title, "\\Update:"+i+"/"+len + " Image Stacks ("+i*100/len +"%)\n"+getBar(i, len));
+     	//wait(200);
+	filename = sourcedir + list[i];
+	if (endsWith(filename, "tif")) {
+		open(filename);
+		t = getTitle;
+						
+		// split the channels
+		run("Split Channels");
+		// select the IF channel for bleach correction
+		for (n=0; n<channels; n++){
+			// choose the corrected DUP image to make composite if the 
+			// channel is chosen from the dialog check box
+			if (check[n] == 1) {
+				selectWindow("C" + toString(n + 1) + "-" + t);
+				run("Bleach Correction", "correction=[Histogram Matching]");
+				chans = "c" + toString(n + 1) + "=DUP_C" + toString(n + 1) + "-";
+			}
+			else {
+				chans = "c" + toString(n + 1) + "=C" + toString(n + 1) + "-";
+			}
+			allchans = allchans + chans + t + " ";
+		}	
+
+		// merge the channels back to make a composite image
+		run("Merge Channels...", allchans + " create");
+
+		//save out put as .ics .ids file pair
+		run("Bio-Formats Exporter", "save=" + destdir + list[i] + ".ids");
+		close();
+		// clear allchans variable
+		allchans = '';
+	}
+}
+
+wait(200);
+print(title, "\\Close");
+
+
+
+// Progress Bar function
+function getBar(p1, p2) {
+	n = 20;
+        bar1 = "--------------------";
+        bar2 = "********************";
+        index = round(n*(p1/p2));
+        if (index<1) index = 1;
+        if (index>n-1) index = n-1;
+        return substring(bar2, 0, index) + substring(bar1, index+1, n);
+}
+

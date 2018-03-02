@@ -1,0 +1,14 @@
+layout	order	bits	x	y	z	t	ch	
+layout	sizes	16	1392	1040	1	11	2	
+utput\testdata.tif.ids
+layout	parameters	6
+layout	order	bits	x	y	z	t	ch	
+layout	sizes	16	1392	1040	1	11	2	
+representation	format	integer
+representation	sign	unsigned
+representation	compression	uncompressed
+representation	byte_order	2	1	
+parameter	scale	1.000000	0.30100535789537053	0.30100535789537053	1.0	0.0	1.0	
+parameter	units	bits	micrometers	micrometers	micrometers	seconds	
+
+end
